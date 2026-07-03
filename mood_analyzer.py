@@ -54,8 +54,9 @@ class MoodAnalyzer:
         """
         cleaned = text.strip().lower()
         tokens = cleaned.split()
+        cleaned_tokens = [token.strip(".,!?;:()[]{}\"'") for token in tokens]
 
-        return tokens
+        return cleaned_tokens
 
     # ---------------------------------------------------------------------
     # Scoring logic
@@ -83,7 +84,14 @@ class MoodAnalyzer:
         #
         # Hint: if you implement negation, you may want to look at pairs of tokens,
         # like ("not", "happy") or ("never", "fun").
-        pass
+        tokens = self.preprocess(text)
+        score = 0
+        for token in tokens:
+            if token in self.positive_words:
+                score += 1
+            if token in self.negative_words:
+                score -= 1
+        return score
 
     # ---------------------------------------------------------------------
     # Label prediction
@@ -110,7 +118,13 @@ class MoodAnalyzer:
         #   2. Return "positive" if the score is above 0.
         #   3. Return "negative" if the score is below 0.
         #   4. Return "neutral" otherwise.
-        pass
+        score = self.score_text(text)
+        if score > 0:
+            return "positive"
+        elif score < 0:
+            return "negative"
+        else:
+            return "neutral"
 
     # ---------------------------------------------------------------------
     # Explanations (optional but recommended)
