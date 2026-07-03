@@ -38,6 +38,27 @@ NEGATIVE_WORDS = [
     "boring",
 ]
 
+# Words that flip the sentiment of the word(s) that follow them
+# (e.g. "not happy", "isn't bad", "don't hate").
+NEGATION_WORDS = [
+    "not",
+    "no",
+    "never",
+    "isnt",
+    "arent",
+    "wasnt",
+    "werent",
+    "dont",
+    "doesnt",
+    "didnt",
+    "cant",
+    "cannot",
+    "wont",
+    "couldnt",
+    "shouldnt",
+    "wouldnt",
+]
+
 # ---------------------------------------------------------------------
 # Starter labeled dataset
 # ---------------------------------------------------------------------
@@ -107,3 +128,42 @@ TRUE_LABELS.append("neutral")
 
 SAMPLE_POSTS.append("On god this is the best day ever")
 TRUE_LABELS.append("positive")
+
+# "Breaker" sentences designed to confuse the rule based model:
+# negation, sarcasm, slang/emoji, and cancelling/mixed sentiment.
+
+SAMPLE_POSTS.append("I am so not excited about this")
+TRUE_LABELS.append("negative")
+
+SAMPLE_POSTS.append("Oh great, another Monday")
+TRUE_LABELS.append("negative")
+
+SAMPLE_POSTS.append("I love waiting an hour in line, truly amazing")
+TRUE_LABELS.append("negative")
+
+SAMPLE_POSTS.append("This isn't bad at all")
+TRUE_LABELS.append("positive")
+
+SAMPLE_POSTS.append("I don't hate it")
+TRUE_LABELS.append("positive")
+
+SAMPLE_POSTS.append("Not gonna lie, today was kind of a mess but also kind of fun")
+TRUE_LABELS.append("mixed")
+
+SAMPLE_POSTS.append("lowkey obsessed, no cap 🔥")
+TRUE_LABELS.append("positive")
+
+SAMPLE_POSTS.append("I could NOT be happier lol 😂")
+TRUE_LABELS.append("positive")
+
+SAMPLE_POSTS.append("Great, just great. Nothing ever goes wrong for me 🙃")
+TRUE_LABELS.append("negative")
+
+SAMPLE_POSTS.append("I'm fine. Really. I'm fine.")
+TRUE_LABELS.append("negative")
+
+SAMPLE_POSTS.append("This is the worst best day of my life")
+TRUE_LABELS.append("mixed")
+
+SAMPLE_POSTS.append("Bad? No, this was terrible")
+TRUE_LABELS.append("negative")

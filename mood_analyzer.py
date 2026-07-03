@@ -11,7 +11,7 @@ This class starts with very simple logic:
 
 from typing import List, Dict, Tuple, Optional
 
-from dataset import POSITIVE_WORDS, NEGATIVE_WORDS
+from dataset import POSITIVE_WORDS, NEGATIVE_WORDS, NEGATION_WORDS
 
 
 class MoodAnalyzer:
@@ -31,6 +31,7 @@ class MoodAnalyzer:
         # Store as sets for faster lookup.
         self.positive_words = set(w.lower() for w in positive_words)
         self.negative_words = set(w.lower() for w in negative_words)
+        self.negation_words = set(w.lower() for w in NEGATION_WORDS)
 
     # ---------------------------------------------------------------------
     # Preprocessing
@@ -52,9 +53,9 @@ class MoodAnalyzer:
           - Handle simple emojis separately (":)", ":-(", "🥲", "😂")
           - Normalize repeated characters ("soooo" -> "soo")
         """
-        cleaned = text.strip().lower()
+        cleaned = text.strip().lower().replace("'", "")
         tokens = cleaned.split()
-        cleaned_tokens = [token.strip(".,!?;:()[]{}\"'") for token in tokens]
+        cleaned_tokens = [token.strip(".,!?;:()[]{}\"") for token in tokens]
 
         return cleaned_tokens
 
@@ -86,11 +87,15 @@ class MoodAnalyzer:
         # like ("not", "happy") or ("never", "fun").
         tokens = self.preprocess(text)
         score = 0
+        negated = False
         for token in tokens:
+            if token in self.negation_words:
+                negated = not negated
+                continue
             if token in self.positive_words:
-                score += 1
+                score += -1 if negated else 1
             if token in self.negative_words:
-                score -= 1
+                score += 1 if negated else -1
         return score
 
     # ---------------------------------------------------------------------
@@ -151,14 +156,26 @@ class MoodAnalyzer:
         positive_hits: List[str] = []
         negative_hits: List[str] = []
         score = 0
+        negated = False
 
         for token in tokens:
+            if token in self.negation_words:
+                negated = not negated
+                continue
             if token in self.positive_words:
-                positive_hits.append(token)
-                score += 1
+                if negated:
+                    negative_hits.append(f"not {token}")
+                    score -= 1
+                else:
+                    positive_hits.append(token)
+                    score += 1
             if token in self.negative_words:
-                negative_hits.append(token)
-                score -= 1
+                if negated:
+                    positive_hits.append(f"not {token}")
+                    score += 1
+                else:
+                    negative_hits.append(token)
+                    score -= 1
 
         return (
             f"Score = {score} "
