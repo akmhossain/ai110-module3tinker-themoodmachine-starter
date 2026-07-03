@@ -63,40 +63,45 @@ class MoodAnalyzer:
     # Scoring logic
     # ---------------------------------------------------------------------
 
-    def score_text(self, text: str) -> int:
+    def _analyze_tokens(self, text: str) -> Tuple[List[str], List[str]]:
         """
-        Compute a numeric "mood score" for the given text.
-
-        Positive words increase the score.
-        Negative words decrease the score.
-
-        TODO: You must choose AT LEAST ONE modeling improvement to implement.
-        For example:
-          - Handle simple negation such as "not happy" or "not bad"
-          - Count how many times each word appears instead of just presence
-          - Give some words higher weights than others (for example "hate" < "annoyed")
-          - Treat emojis or slang (":)", "lol", "💀") as strong signals
+        Shared helper: walk the tokens once and bucket them into
+        positive_hits / negative_hits, accounting for negation words
+        ("not", "never", "isnt", ...) that flip the sentiment of the
+        word(s) that follow. Each negation word toggles the flip, so
+        "not not happy" ends up positive again.
         """
-        # TODO: Implement this method.
-        #   1. Call self.preprocess(text) to get tokens.
-        #   2. Loop over the tokens.
-        #   3. Increase the score for positive words, decrease for negative words.
-        #   4. Return the total score.
-        #
-        # Hint: if you implement negation, you may want to look at pairs of tokens,
-        # like ("not", "happy") or ("never", "fun").
         tokens = self.preprocess(text)
-        score = 0
+        positive_hits: List[str] = []
+        negative_hits: List[str] = []
         negated = False
+
         for token in tokens:
             if token in self.negation_words:
                 negated = not negated
                 continue
             if token in self.positive_words:
-                score += -1 if negated else 1
+                if negated:
+                    negative_hits.append(f"not {token}")
+                else:
+                    positive_hits.append(token)
             if token in self.negative_words:
-                score += 1 if negated else -1
-        return score
+                if negated:
+                    positive_hits.append(f"not {token}")
+                else:
+                    negative_hits.append(token)
+
+        return positive_hits, negative_hits
+
+    def score_text(self, text: str) -> int:
+        """
+        Compute a numeric "mood score" for the given text.
+
+        Positive words (and negated negative words) increase the score.
+        Negative words (and negated positive words) decrease the score.
+        """
+        positive_hits, negative_hits = self._analyze_tokens(text)
+        return len(positive_hits) - len(negative_hits)
 
     # ---------------------------------------------------------------------
     # Label prediction
@@ -104,29 +109,25 @@ class MoodAnalyzer:
 
     def predict_label(self, text: str) -> str:
         """
-        Turn the numeric score for a piece of text into a mood label.
+        Turn a piece of text's sentiment hits into a mood label.
 
-        The default mapping is:
-          - score > 0  -> "positive"
-          - score < 0  -> "negative"
-          - score == 0 -> "neutral"
+        Mapping:
+          - both positive and negative words present -> "mixed"
+          - more positive hits than negative          -> "positive"
+          - more negative hits than positive          -> "negative"
+          - no sentiment words at all                 -> "neutral"
 
-        TODO: You can adjust this mapping if it makes sense for your model.
-        For example:
-          - Use different thresholds (for example score >= 2 to be "positive")
-          - Add a "mixed" label for scores close to zero
-        Just remember that whatever labels you return should match the labels
-        you use in TRUE_LABELS in dataset.py if you care about accuracy.
+        "Mixed" is based on whether both signals fired at all, not on
+        whether they happen to cancel out to a net score of zero. That
+        way "tired but hopeful" is "mixed" instead of "neutral", which
+        is reserved for text with no sentiment words (e.g. "This is fine").
         """
-        # TODO: Implement this method.
-        #   1. Call self.score_text(text) to get the numeric score.
-        #   2. Return "positive" if the score is above 0.
-        #   3. Return "negative" if the score is below 0.
-        #   4. Return "neutral" otherwise.
-        score = self.score_text(text)
-        if score > 0:
+        positive_hits, negative_hits = self._analyze_tokens(text)
+        if positive_hits and negative_hits:
+            return "mixed"
+        elif len(positive_hits) > len(negative_hits):
             return "positive"
-        elif score < 0:
+        elif len(negative_hits) > len(positive_hits):
             return "negative"
         else:
             return "neutral"
@@ -151,31 +152,8 @@ class MoodAnalyzer:
         The current implementation is a placeholder so the code runs even
         before you implement it.
         """
-        tokens = self.preprocess(text)
-
-        positive_hits: List[str] = []
-        negative_hits: List[str] = []
-        score = 0
-        negated = False
-
-        for token in tokens:
-            if token in self.negation_words:
-                negated = not negated
-                continue
-            if token in self.positive_words:
-                if negated:
-                    negative_hits.append(f"not {token}")
-                    score -= 1
-                else:
-                    positive_hits.append(token)
-                    score += 1
-            if token in self.negative_words:
-                if negated:
-                    positive_hits.append(f"not {token}")
-                    score += 1
-                else:
-                    negative_hits.append(token)
-                    score -= 1
+        positive_hits, negative_hits = self._analyze_tokens(text)
+        score = len(positive_hits) - len(negative_hits)
 
         return (
             f"Score = {score} "
